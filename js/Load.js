@@ -1,15 +1,21 @@
-class LoadScene extends Phaser.Scene {
+export default class LoadScene extends Phaser.Scene {
     constructor() {
         super("LoadScene")
     }
 
+    init(){
+        const {width, height} = this.sys.game.canvas;
+        this.GAME_WIDTH = width;
+        this.GAME_HEIGHT = height;
+    }
+
     preload() {
-        let loadingBar = this.add.sprite(config.width / 2 - 100, config.height / 2, "loadingBar")
+        let loadingBar = this.add.sprite(this.GAME_WIDTH / 2 - 100,  this.GAME_HEIGHT / 2, "loadingBar")
         loadingBar.setOrigin(0);
 
-        let txtLoading = this.add.text(config.width / 2, config.height / 2 + 24, "Loading...:")
+        let txtLoading = this.add.text(this.GAME_WIDTH / 2,  this.GAME_HEIGHT / 2 + 24, "Loading...:")
         txtLoading.setOrigin(0.5);
-        let txtLoadingPerc = this.add.text(config.width / 2, config.height / 2, "0%")
+        let txtLoadingPerc = this.add.text(this.GAME_WIDTH / 2,  this.GAME_HEIGHT / 2, "0%")
         txtLoadingPerc.setOrigin(0.5);
 
         this.load.on('progress', function (value) {
@@ -117,7 +123,7 @@ class LoadScene extends Phaser.Scene {
 
         this.anims.create(
             {
-                key: "Surprise Block 1",
+                key: "Surprise Block Ativo",
                 frames: this.anims.generateFrameNumbers("surpriseBlock", { start: 0, end: 3 }),
                 frameRate: 7,
                 repeat: -1,
@@ -128,7 +134,7 @@ class LoadScene extends Phaser.Scene {
 
         this.anims.create(
             {
-                key: "Surprise Block 2",
+                key: "Surprise Block Inativo",
                 frames: [{ key: "surpriseBlock", frame: 4 }],
                 frameRate: 10,
                 repeat: -1
@@ -173,10 +179,10 @@ class LoadScene extends Phaser.Scene {
                 repeat: -1
             });
 
-        this.add.text(config.width / 2, config.height / 2 + 48, "Pressione ENTER").setOrigin(0.5);
+        this.add.text(this.GAME_WIDTH / 2,  this.GAME_HEIGHT / 2 + 48, "Pressione ENTER").setOrigin(0.5);
         let enterKey = this.input.keyboard.addKey("ENTER");
         enterKey.on('down', function () {
-            this.scene.start("Level1")
+            this.scene.start("MenuScene")
         }, this)
     }
 }

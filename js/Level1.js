@@ -1,19 +1,25 @@
-class Level1 extends Phaser.Scene {
+import Enemy from "./Enemy.js";
+import Jogador from "./Player.js"
+import Item from "./Item.js"
+
+export default class Level1 extends Phaser.Scene {
     constructor() {
         super("Level1");
     }
 
+    init(){
+        const {width, height} = this.sys.game.canvas;
+        this.GAME_WIDTH = width;
+        this.GAME_HEIGHT = height;
+    }
+
     create() {
-        this.anims.resumeAll()
+        this.anims.resumeAll();
+
         // Audio
         this.backgroundMusic = this.sound.add("backgroundMusic", {
-            mute: false,
             volume: 0.3,
-            rate: 1,
-            detune: 0,
-            seek: 0,
-            loop: true,
-            delay: 0
+            loop: true
         })
 
         this.backgroundMusic.play();
@@ -34,19 +40,18 @@ class Level1 extends Phaser.Scene {
         this.world.setCollisionByProperty({ collide: true });
 
         // JOGADOR
-        this.jogador = this.physics.add.sprite(100, config.height - 48, "MarioPequeno");
-        this.jogador.setCollideWorldBounds(true);
-        this.jogador.body.setMaxVelocity(100, 420)
-        this.jogador.setGravity(0, 1000);
-        this.jogador.jumpTime = 0;
-        this.jogador.hasJumped = false;
-        this.jogador.setDepth(3);
+        this.jogador = new Jogador(this, 100, this.GAME_HEIGHT - 48, "MarioPequeno");
+        // this.jogador = this.physics.add.sprite(100, this.GAME_HEIGHT - 48, "MarioPequeno");
+        // this.jogador.setCollideWorldBounds(true);
+        // this.jogador.body.setMaxVelocity(100, 420)
+        // this.jogador.setGravity(0, 1000);
+        // this.jogador.jumpTime = 0;
+        // this.jogador.hasJumped = false;
+        // this.jogador.setDepth(3);
 
-        this.jogador.stance = "Idle"
+        // this.jogador.stance = "Idle"
 
         // BLOCOS INTERATIVOS
-
-
         this.bricks = this.add.group();
         this.surpriseBricks = this.add.group();
 
@@ -67,7 +72,7 @@ class Level1 extends Phaser.Scene {
                 const y = tile.getCenterY();
 
                 let surpriseBricks = this.physics.add.sprite(x, y, "surpriseBlock");
-                surpriseBricks.anims.play("Surprise Block 1");
+                surpriseBricks.anims.play("Surprise Block Ativo");
                 surpriseBricks.setDepth(2);
                 surpriseBricks.setImmovable();
                 surpriseBricks.canDrop = true;
@@ -114,7 +119,6 @@ class Level1 extends Phaser.Scene {
         this.cursor = this.input.keyboard.createCursorKeys();
 
         // HUD
-
         this.hudScore = 0;
         this.hudCoins = 0;
         this.hudTime = 240;
@@ -159,6 +163,7 @@ class Level1 extends Phaser.Scene {
             loop: true,
             timeScale: 1,
         });
+
         // FISICA
         this.objectWorldCollider = this.physics.add.collider(this.jogador, this.world);
         this.physics.add.collider(this.jogador, this.bricks, this.playerHitBrick, null, this);
@@ -180,12 +185,14 @@ class Level1 extends Phaser.Scene {
         this.cameras.main.setBounds(0, 0, 3584, 240).setName('main');
     }
     update(time, deltaTime) {
-        this.movePlayer(deltaTime)
+        this.jogador.update(this.cursor, deltaTime);
 
+        // Atualização do Inimigo
         this.inimigos.children.each((inimigo) => {
             inimigo.update();
         })
 
+        // Atualização dos items
         this.items.children.each((item) => {
             if (item.name == "Mushroom" && item.body.onWall() && (item.body.touching.down || item.body.onFloor())) {
                 item.direcao *= -1;
@@ -194,130 +201,28 @@ class Level1 extends Phaser.Scene {
             item.update();
         })
 
+        // Fim de jogo ao cair
         if (this.jogador.y + this.jogador.height / 2 == 288) {
             this.gameOver("Bordas do Mundo");
         }
-    }
-
-    movePlayer(deltaTime) {
-        if (!this.jogador.active) { return; }
-
-        if (!this.cursor.right.isDown && !this.cursor.left.isDown) {
-            this.jogador.setAccelerationX(0);
-            this.jogador.setDragX(200);
-        }
-        if (this.jogador.body.velocity.x == 0 && (this.jogador.body.touching.down || this.jogador.body.onFloor())) {
-            this.jogador.stance = "Idle"
-            this.jogador.anims.play("Idle", true);
-        }
-
-        if (this.cursor.right.isDown) {
-            this.jogador.flipX = false;
-            this.jogador.setAccelerationX(350);
-
-            if (this.jogador.body.velocity.x < 0 && (this.jogador.body.touching.down || this.jogador.body.onFloor())) {
-                this.jogador.stance = "Changing Direction"
-                this.jogador.anims.play("Changing Direction", true);
-            }
-            else if (this.jogador.body.touching.down || this.jogador.body.onFloor()) {
-                this.jogador.stance = "Walking"
-                this.jogador.anims.play("Walking", true);
-            }
-        }
-        if (this.cursor.left.isDown) {
-            this.jogador.flipX = true;
-            this.jogador.setAccelerationX(-350);
-
-            if (this.jogador.body.velocity.x > 0 && (this.jogador.body.touching.down || this.jogador.body.onFloor())) {
-                this.jogador.stance = "Walking"
-                this.jogador.anims.play("Changing Direction", true);
-            }
-            else if (this.jogador.body.touching.down || this.jogador.body.onFloor()) {
-                this.jogador.stance = "Walking"
-                this.jogador.anims.play("Walking", true);
-            }
-        }
-        if (this.cursor.up.isDown) {
-            if ((this.jogador.body.touching.down || this.jogador.body.onFloor()) && !this.jogador.hasJumped) {
-                this.jogador.jumpTime = 0;
-
-                //this.jogador.setVelocityY(-420);
-                this.jogador.stance = "Jumping";
-                this.jogador.anims.play("Jump", true);
-                this.jumpSFX.play();
-                this.jogador.hasJumped = true;
-            }
-            if (this.jogador.hasJumped) {
-                this.jogador.jumpTime += deltaTime;
-                if (this.jogador.jumpTime > 280) {
-                    return;
-                }
-                this.jogador.setVelocityY(-210)
-            }
-        }
-        if (this.cursor.up.isUp) {
-            this.jogador.jumpTime = 0;
-            this.jogador.hasJumped = false;
-        }
-
-        /*if (!this.jogador.body.touching.down && !this.jogador.body.onFloor()) {
-            this.jogador.anims.play("Jump", false);
-        }*/
     }
 
     enemyCollision(jogador, inimigo) {
         if (jogador.y + jogador.height <= inimigo.y) {
             let newScore;
             jogador.setVelocityY(-130);
+            jogador.stance = "Jump";
             this.bumpSFX.play();
 
-            if (inimigo.name == "Little Gomba") {
-                inimigo.anims.play("Little Gomba Dead")
-                this.time.addEvent({
-                    delay: 300,                // ms
-                    callback: function () {
-                        this.inimigos.remove(inimigo, true, true);
-                    },
-                    //args: [],
-                    callbackScope: this
-                });
-                inimigo.alive = false;
-                inimigo.disableBody(true);
-                inimigo.setVelocityX(0);
-
-                newScore = 200;
+            if (inimigo.name === "Little Gomba") {
+                newScore = this.littleGombaColisao(jogador, inimigo);
             }
 
-            else if (inimigo.name == "Koopa Troopa") {
-                if(!inimigo.wasHit){
-                    inimigo.anims.play("Koopa Troopa Defend");
-                    inimigo.canWalk = false;
-                    inimigo.wasHit = true;
-                    inimigo.setVelocityX(0);
-                    newScore = 200;
-                } else if (inimigo.wasHit && !inimigo.canWalk){
-                    inimigo.maxVelocity = 250;
-                    if (jogador.x < inimigo.x) {
-                        //inimigo.setVelocityX(-250);
-                        inimigo.direcao = 1;
-                    } else if (jogador.x > inimigo.x) {
-                       // inimigo.setVelocityX(250);
-                        inimigo.direcao = -1;
-                    }
-                    newScore = 400;
-                    inimigo.canWalk = true;
-                }
-                else {
-                    inimigo.maxVelocity = 0;
-                    inimigo.setVelocityX(0);
-                    newScore = 400;
-                    inimigo.canWalk = false;
-                }
-            }
-            else {
-                return;
+            else if (inimigo.name === "Koopa Troopa") {
+                newScore = this.koopaTroopaColisao(jogador, inimigo);
             }
 
+            // Adiciona um texto que anima em cima do inimigo, indicando a quantidade de pontos
             let txtScore = this.add.text(inimigo.x, inimigo.y - inimigo.height, `${newScore}`, { fontFamily: "Source Code Pro", fontSize: "8px" })
             txtScore.setOrigin(0.5);
             txtScore.setDepth(5);
@@ -336,27 +241,57 @@ class Level1 extends Phaser.Scene {
                 },
                 onCompleteScope: this
             });
-        } 
-        else if (inimigo.name == "Koopa Troopa" && inimigo.wasHit) {
-            console.log(inimigo)
-            if(!inimigo.canWalk){
-                inimigo.maxVelocity = 250;
-                if (jogador.x < inimigo.x) {
-                    //inimigo.setVelocityX(-250);
-                    inimigo.direcao = 1;
-                } else if (jogador.x > inimigo.x) {
-                   // inimigo.setVelocityX(250);
-                    inimigo.direcao = -1;
-                }
-                inimigo.canWalk = true;    
-            }
-            else {
-                this.gameOver("Inimigo")
-            }
         }
         else {
             this.gameOver("Inimigo");
         }
+    }
+
+    littleGombaColisao(jogador, inimigo){
+        let newScore;
+        inimigo.anims.play("Little Gomba Dead")
+        inimigo.alive = false;
+        inimigo.disableBody(true);
+        inimigo.setVelocityX(0);
+
+        this.time.addEvent({
+            delay: 300,                // ms
+            callback: function () {
+                this.inimigos.remove(inimigo, true, true);
+            },
+            //args: [],
+            callbackScope: this
+        });
+
+        return newScore = 200;
+    }
+
+    koopaTroopaColisao(jogador,inimigo){
+        let newScore;
+        if (!inimigo.wasHit) {
+            inimigo.anims.play("Koopa Troopa Defend");
+            inimigo.canWalk = false;
+            inimigo.wasHit = true;
+            inimigo.setVelocityX(0);
+            newScore = 200;
+        } else if (inimigo.wasHit) {
+            if(!inimigo.canWalk){
+                inimigo.canWalk = true;
+                inimigo.maxVelocity = 250;
+                if (jogador.x < inimigo.x) {
+                    inimigo.direcao = 1;
+                } else if (jogador.x > inimigo.x) {
+                    inimigo.direcao = -1;
+                }
+                newScore = 400;
+            }else{
+                inimigo.maxVelocity = 0;
+                inimigo.setVelocityX(0);
+                newScore = 400;
+                inimigo.canWalk = false;
+            }
+        }
+        return newScore;
     }
 
     enemyOverlap(inimigoA, inimigoB) {
@@ -370,7 +305,6 @@ class Level1 extends Phaser.Scene {
             jogador.jumpTime = 500;
             jogador.setVelocityY(0);
 
-            //console.log("FOI")
             this.tweens.add({
                 targets: brick,
                 y: brick.y - brick.height / 2,
@@ -385,6 +319,9 @@ class Level1 extends Phaser.Scene {
     playerHitSurpriseBrick(jogador, brick) {
         if (Math.ceil(jogador.y - jogador.height / 2) == Math.ceil(brick.y + brick.height / 2)) {
             if (!brick.canDrop) { return; }
+
+            brick.canDrop = false;
+            brick.anims.play("Surprise Block Inativo");
 
             if (jogador.tamanho = "Pequeno") {
                 this.tweens.add({
@@ -402,38 +339,14 @@ class Level1 extends Phaser.Scene {
             jogador.jumpTime = 500;
             jogador.setVelocityY(0);
 
-            brick.canDrop = false;
-            brick.anims.play("Surprise Block 2");
-
-
             if (itemProb <= 70) {
-                console.log("COIN")
-
-                this.coinSFX.play();
-                item = this.physics.add.sprite(brick.x, brick.y - brick.height / 2, "coin");
-                item.name = "Coin"
-                this.time.addEvent({
-                    delay: 500,                // ms
-                    callback: function () {
-                        this.collectItem(this.jogador, item);
-                    },
-                    args: [],
-                    callbackScope: this,
-                    loop: false,
-                    timeScale: 1,
-                });
+                item = this.spawnCoin(brick);
             } else if (itemProb <= 90) {
-                console.log("MUSHROOM")
-                item = new Item(this, brick.x, brick.y - brick.height / 2, "mushroom")
-                item.name = "Mushroom"
+                item = this.spawnMushroom(brick);
             } else if (itemProb <= 95) {
-                console.log("MAGIC MUSHROOM")
-                item = this.physics.add.sprite(brick.x, brick.y - brick.height / 2, "magicMushroom");
-                item.name = "Magic Mushroom"
+                item = this.spawnMagicMushroom(brick);
             } else {
-                console.log("STAR MAN")
-                item = this.physics.add.sprite(brick.x, brick.y - brick.height / 2, "starMan");
-                item.name = "Star Man"
+                item = this.spawnStarMan(brick);
             }
 
             item.setVelocityY(-250);
@@ -443,23 +356,55 @@ class Level1 extends Phaser.Scene {
         }
     }
 
+    spawnCoin(brick){
+        this.coinSFX.play();
+        this.addCoin();
+        let item = this.physics.add.sprite(brick.x, brick.y - brick.height / 2, "coin");
+        item.name = "Coin"
+        this.time.addEvent({
+            delay: 500,                // ms
+            callback: function () {
+                this.collectItem(this.jogador, item);
+            },
+            args: [],
+            callbackScope: this,
+            loop: false,
+            timeScale: 1,
+        });
+        return item;
+    }
+
+    spawnMushroom(brick){
+        let item = new Item(this, brick.x, brick.y - brick.height / 2, "mushroom")
+        item.name = "Mushroom"
+        return item;
+    }
+
+    spawnMagicMushroom(brick){
+        let item = this.physics.add.sprite(brick.x, brick.y - brick.height / 2, "magicMushroom");
+        item.name = "Magic Mushroom"
+        return item;
+    }
+
+    spawnStarMan(brick){
+        let item = this.physics.add.sprite(brick.x, brick.y - brick.height / 2, "starMan");
+        item.name = "Star Man"
+        return item;
+    }
+
     collectItem(jogador, item) {
-        if (item.name == "Coin") {
-            console.log("Coletou Coin");
+        if (item.name === "Coin") {
             this.items.remove(item, true, true)
             this.addScore(200);
             this.addCoin();
         }
-        if (item.name == "Mushroom") {
-            console.log("Coletou Mushroom");
+        if (item.name === "Mushroom") {
             this.items.remove(item, true, true)
         }
-        if (item.name == "Magic Mushroom") {
-            console.log("Coletou Magic Mushroom");
+        if (item.name === "Magic Mushroom") {
             this.items.remove(item, true, true)
         }
-        if (item.name == "Star Man") {
-            console.log("Coletou Star Man");
+        if (item.name === "Star Man") {
             this.items.remove(item, true, true)
         }
     }
@@ -476,16 +421,15 @@ class Level1 extends Phaser.Scene {
 
     gameOver(origem) {
         if (this.jogador.active == false) { return; }
+
         this.stopAll();
-        this.jogador.setVelocity(0);
-        this.jogador.setAcceleration(0)
+
         this.jogador.setActive(false);
-        this.jogador.anims.play("Dead");
+        // this.jogador.anims.play("Dead");
+        this.jogador.stance="Dead";
         this.gameOverSFX.play();
-        //this.jogador.disableBody(true);
 
         if (origem == "Inimigo") {
-            //this.objectWorldCollider.destroy();
             this.physics.world.colliders.destroy();
             this.tweens.add({
                 targets: this.jogador,
@@ -507,6 +451,9 @@ class Level1 extends Phaser.Scene {
         this.sound.pauseAll();
         this.cameras.main.stopFollow();
         this.hudTimer.destroy();
+
+        this.jogador.setVelocity(0);
+        this.jogador.setAcceleration(0);
 
         this.items.children.iterate((item, index) => {
             item.setVelocity(0, 0);
