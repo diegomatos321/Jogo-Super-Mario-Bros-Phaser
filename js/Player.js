@@ -1,5 +1,5 @@
-export default class Enemy extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, texture) {
+export default class Jogador extends Phaser.Physics.Arcade.Sprite {
+    constructor(scene, x, y, texture, {current, tamanho}) {
         super(scene, x, y, texture)
 
         scene.add.existing(this);
@@ -12,6 +12,8 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
         this.hasJumped = false;
         this.setDepth(3);
 
+        this.current = current;
+        this.tamanho = tamanho;
         this.stance = "Idle"
 
     }
@@ -84,6 +86,6 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
     animacaoDoJogador() {
         this.body.setSize();
-        this.anims.play(this.stance, true);
+        this.anims.play(`${this.current} ${this.tamanho} ${this.stance}`, true);
     }
 }
