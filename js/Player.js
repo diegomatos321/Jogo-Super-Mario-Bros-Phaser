@@ -10,6 +10,7 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
         this.setGravity(0, 1000);
         this.jumpTime = 0;
         this.hasJumped = false;
+        this.canJump = true;
         this.setDepth(3);
 
         this.aceleracao = {
@@ -73,12 +74,13 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
         }
 
         if (cursor.up.isDown) {
-            if ((this.body.touching.down || this.body.onFloor()) && !this.hasJumped) {
+            if ((this.body.touching.down || this.body.onFloor()) && !this.hasJumped && this.canJump) {
                 this.jumpTime = 0;
 
                 this.stance = "Jump";
                 this.scene.jumpSFX.play();
                 this.hasJumped = true;
+                this.canJump = false;
             }
 
             if (this.hasJumped) {
@@ -90,6 +92,7 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
             }
         }
         if (cursor.up.isUp) {
+            this.canJump = true;
             this.jumpTime = 0;
             this.hasJumped = false;
         }

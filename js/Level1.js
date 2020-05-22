@@ -30,6 +30,9 @@ export default class Level1 extends Phaser.Scene {
         this.coinSFX = this.sound.add("coinSFX", {volume : 0.3});
         this.gameOverSFX = this.sound.add("gameOverSFX");
 
+        // Variaveis
+        this.GameOver = false;
+
         // TILEMAP
         this.physics.world.setBounds(0, 0, 3584, 288);
 
@@ -197,24 +200,25 @@ export default class Level1 extends Phaser.Scene {
         })
 
         // Fim de jogo ao cair
-        if (this.jogador.y == 288) {
+        if (this.jogador.y >= 275 && !this.GameOver) {
+            console.log("FOI")
             this.gameOver("Bordas do Mundo");
         }
 
         // Camera segue o jogaodr
         if (posicaoRelativaDoJogador > this.GAME_WIDTH / 2) {
-            this.cameras.main.startFollow(this.jogador, true, 0.1, 0.1);
+            this.cameras.main.startFollow(this.jogador, true, 0.01, 0.01);
         } else {
             this.cameras.main.stopFollow();
         }
     }
 
     enemyCollision(jogador, inimigo) {
-        console.log("Foi Atingido")
-        if (jogador.y + jogador.body.halfHeight <= inimigo.y) {
+        if (jogador.y + jogador.body.halfHeight <= inimigo.y - inimigo.body.halfHeight) {
             let newScore;
             jogador.setVelocityY(-130);
             jogador.stance = "Jump";
+            jogador.canJump = false;
             this.bumpSFX.play();
 
             if (inimigo.name === "Little Gomba") {
@@ -239,9 +243,12 @@ export default class Level1 extends Phaser.Scene {
                 jogador.body.setVelocity(200, -200)
             } else {
                 jogador.body.setVelocity(-200, -200)
-                console.log("FOI2")
             }
             jogador.tamanho = "Pequeno";
+            if(inimigo.name == "Koopa Troopa"){
+                inimigo.canWalk = false;
+                inimigo.setVelocityX(0);
+            }
         }
     }
 
@@ -282,8 +289,8 @@ export default class Level1 extends Phaser.Scene {
                     inimigo.direcao = -1;
                 }
             } else {
-                inimigo.maxVelocity = 0;
-                inimigo.setVelocityX(0);
+                inimigo.setVelocityX(5);
+                inimigo.direcao *= -1;
                 newScore = 400;
                 inimigo.canWalk = false;
             }
@@ -361,13 +368,14 @@ export default class Level1 extends Phaser.Scene {
 
             if (itemProb <= 70) {
                 item = this.spawnCoin(brick);
-            } else if (itemProb <= 90) {
+            } else  {
                 item = this.spawnMushroom(brick);
-            } else if (itemProb <= 95) {
-                item = this.spawnMagicMushroom(brick);
-            } else {
-                item = this.spawnStarMan(brick);
-            }
+            } 
+            // else if (itemProb <= 95) {
+            //     item = this.spawnMagicMushroom(brick);
+            // } else {
+            //     item = this.spawnStarMan(brick);
+            // }
 
             item.setVelocityY(-250);
             item.setGravity(0, 1000);
@@ -378,7 +386,6 @@ export default class Level1 extends Phaser.Scene {
 
     spawnCoin(brick) {
         this.coinSFX.play();
-        this.addCoin();
         let item = this.physics.add.sprite(brick.x, brick.y - brick.body.height, "coin");
         item.name = "Coin"
         this.time.addEvent({
@@ -464,10 +471,10 @@ export default class Level1 extends Phaser.Scene {
     gameOver(origem) {
         if (this.jogador.active == false) { return; }
 
+        this.GameOver = true;
         this.stopAll();
 
         this.jogador.setActive(false);
-        // this.jogador.anims.play("Dead");
         this.jogador.stance = "Dead";
         this.gameOverSFX.play();
 
