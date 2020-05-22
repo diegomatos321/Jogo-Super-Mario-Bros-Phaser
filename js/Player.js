@@ -1,5 +1,5 @@
 export default class Jogador extends Phaser.Physics.Arcade.Sprite {
-    constructor(scene, x, y, texture, {current, tamanho}) {
+    constructor(scene, x, y, texture, { current, tamanho }) {
         super(scene, x, y, texture)
 
         scene.add.existing(this);
@@ -12,35 +12,46 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
         this.hasJumped = false;
         this.setDepth(3);
 
+        this.aceleracao = {
+            x: 350,
+            y: 210
+        };
+        this.atrito = 200;
+
         this.current = current;
         this.tamanho = tamanho;
         this.stance = "Idle"
 
     }
 
-    update(cursor, deltaTime) {
+    update(cursor, deltaTime, posicaoRelativaDoJogador) {
         // Anima Jogador
         this.animacaoDoJogador();
 
         if (!this.active) { return; }
-        // Movimenta o Jogador
-        this.movimentacaoDoJogador(cursor, deltaTime)
+        
 
+        if (posicaoRelativaDoJogador >= 0) {
+            // Movimenta o Jogador
+            this.movimentacaoDoJogador(cursor, deltaTime)
+        }else{
+            this.setAccelerationX(this.aceleracao.x*2);
+        }
     }
 
     movimentacaoDoJogador(cursor, deltaTime) {
         if (!cursor.right.isDown && !cursor.left.isDown) {
             this.setAccelerationX(0);
-            this.setDragX(200);
+            this.setDragX(this.atrito);
         }
 
-        if (this.body.velocity.x == 0 && (this.body.touching.down || this.body.onFloor())) {
+        if ((this.body.velocity.x == 0 && this.body.velocity.y == 0) && (this.body.touching.down || this.body.onFloor())) {
             this.stance = "Idle"
         }
 
         if (cursor.right.isDown) {
             this.flipX = false;
-            this.setAccelerationX(350);
+            this.setAccelerationX(this.aceleracao.x);
 
             if (this.body.velocity.x < 0 && (this.body.touching.down || this.body.onFloor())) {
                 this.stance = "Changing Direction";
@@ -51,7 +62,7 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
         }
         else if (cursor.left.isDown) {
             this.flipX = true;
-            this.setAccelerationX(-350);
+            this.setAccelerationX(-this.aceleracao.x);
 
             if (this.body.velocity.x > 0 && (this.body.touching.down || this.body.onFloor())) {
                 this.stance = "Changing Direction";
@@ -75,7 +86,7 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
                 if (this.jumpTime > 280) {
                     return;
                 }
-                this.setVelocityY(-210)
+                this.setVelocityY(-this.aceleracao.y)
             }
         }
         if (cursor.up.isUp) {
@@ -85,7 +96,7 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
     }
 
     animacaoDoJogador() {
-        this.body.setSize();
         this.anims.play(`${this.current} ${this.tamanho} ${this.stance}`, true);
+        this.body.setSize();
     }
 }

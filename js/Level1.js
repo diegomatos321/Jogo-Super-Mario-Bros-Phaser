@@ -7,8 +7,8 @@ export default class Level1 extends Phaser.Scene {
         super("Level1");
     }
 
-    init(data){
-        const {width, height} = this.sys.game.canvas;
+    init(data) {
+        const { width, height } = this.sys.game.canvas;
         this.GAME_WIDTH = width;
         this.GAME_HEIGHT = height;
 
@@ -20,14 +20,14 @@ export default class Level1 extends Phaser.Scene {
 
         // Audio
         this.backgroundMusic = this.sound.add("backgroundMusic", {
-            volume: 0.3,
+            volume: 0.1,
             loop: true
         })
 
         this.backgroundMusic.play();
-        this.jumpSFX = this.sound.add("jumpSFX");
-        this.bumpSFX = this.sound.add("bumpSFX");
-        this.coinSFX = this.sound.add("coinSFX");
+        this.jumpSFX = this.sound.add("jumpSFX", {volume : 0.3});
+        this.bumpSFX = this.sound.add("bumpSFX", {volume : 0.3});
+        this.coinSFX = this.sound.add("coinSFX", {volume : 0.3});
         this.gameOverSFX = this.sound.add("gameOverSFX");
 
         // TILEMAP
@@ -173,12 +173,14 @@ export default class Level1 extends Phaser.Scene {
 
         this.physics.add.collider(this.jogador, this.inimigos, this.enemyCollision, null, this);
 
-        this.cameras.main.startFollow(this.jogador, true, 0.05, 0.05, -50);
         this.cameras.main.setBounds(0, 0, 3584, 240).setName('main');
     }
 
     update(time, deltaTime) {
-        this.jogador.update(this.cursor, deltaTime);
+        const { x: viewPortPosX } = this.cameras.main.worldView;
+        const posicaoRelativaDoJogador = this.jogador.x - viewPortPosX;
+
+        this.jogador.update(this.cursor, deltaTime, posicaoRelativaDoJogador);
 
         // Atualização do Inimigo
         this.inimigos.children.each((inimigo) => {
@@ -195,13 +197,20 @@ export default class Level1 extends Phaser.Scene {
         })
 
         // Fim de jogo ao cair
-        if (this.jogador.y + this.jogador.body.halfHeight == 288) {
+        if (this.jogador.y == 288) {
             this.gameOver("Bordas do Mundo");
+        }
+
+        // Camera segue o jogaodr
+        if (posicaoRelativaDoJogador > this.GAME_WIDTH / 2) {
+            this.cameras.main.startFollow(this.jogador, true, 0.1, 0.1);
+        } else {
+            this.cameras.main.stopFollow();
         }
     }
 
     enemyCollision(jogador, inimigo) {
-        console.log(jogador.body.height)
+        console.log("Foi Atingido")
         if (jogador.y + jogador.body.halfHeight <= inimigo.y) {
             let newScore;
             jogador.setVelocityY(-130);
@@ -213,37 +222,30 @@ export default class Level1 extends Phaser.Scene {
             }
 
             else if (inimigo.name === "Koopa Troopa") {
-                newScore = this.koopaTroopaColisao(jogador, inimigo);
+                newScore = this.koopaTroopaColisao(jogador, inimigo, true);
+                if (!newScore) return;
             }
-
-            // Adiciona um texto que anima em cima do inimigo, indicando a quantidade de pontos
-            let txtScore = this.add.text(inimigo.x, inimigo.y - inimigo.body.height, `${newScore}`, { fontFamily: "Source Code Pro", fontSize: "8px" })
-            txtScore.setOrigin(0.5);
-            txtScore.setDepth(5);
 
             this.addScore(newScore);
 
-            this.tweens.add({
-                targets: txtScore,
-                y: inimigo.y - (inimigo.body.height * 3.5),
-                ease: 'Circ',
-                duration: 400,
-                repeat: 0,
-                yoyo: false,
-                onComplete: function () {
-                    txtScore.destroy()
-                },
-                onCompleteScope: this
-            });
-        }
-        else if (inimigo.name == "Koopa Troopa") {
+            // Adiciona um texto que anima em cima do inimigo, indicando a quantidade de pontos
+            this.motionText(inimigo, newScore)
+        } else if (inimigo.name == "Koopa Troopa" && !inimigo.canWalk) {
             this.koopaTroopaColisao(jogador, inimigo);
-        } else{
+        } else if (jogador.tamanho == "Pequeno") {
             this.gameOver("Inimigo");
+        } else if (jogador.tamanho == "Grande") {
+            if (jogador.x > inimigo.x) {
+                jogador.body.setVelocity(200, -200)
+            } else {
+                jogador.body.setVelocity(-200, -200)
+                console.log("FOI2")
+            }
+            jogador.tamanho = "Pequeno";
         }
     }
 
-    littleGombaColisao(jogador, inimigo){
+    littleGombaColisao(jogador, inimigo) {
         let newScore;
         inimigo.anims.play("Little Gomba Dead")
         inimigo.alive = false;
@@ -262,7 +264,7 @@ export default class Level1 extends Phaser.Scene {
         return newScore = 200;
     }
 
-    koopaTroopaColisao(jogador,inimigo){
+    koopaTroopaColisao(jogador, inimigo) {
         let newScore;
         if (!inimigo.wasHit) {
             inimigo.anims.play("Koopa Troopa Defend");
@@ -271,7 +273,7 @@ export default class Level1 extends Phaser.Scene {
             inimigo.setVelocityX(0);
             newScore = 200;
         } else if (inimigo.wasHit) {
-            if(!inimigo.canWalk){
+            if (!inimigo.canWalk) {
                 inimigo.canWalk = true;
                 inimigo.maxVelocity = 250;
                 if (jogador.x < inimigo.x) {
@@ -279,8 +281,7 @@ export default class Level1 extends Phaser.Scene {
                 } else if (jogador.x > inimigo.x) {
                     inimigo.direcao = -1;
                 }
-                newScore = 400;
-            }else{
+            } else {
                 inimigo.maxVelocity = 0;
                 inimigo.setVelocityX(0);
                 newScore = 400;
@@ -298,17 +299,40 @@ export default class Level1 extends Phaser.Scene {
 
     playerHitBrick(jogador, brick) {
         if (Math.ceil(jogador.y - jogador.body.halfHeight) == Math.ceil(brick.y + brick.body.halfHeight)) {
-            jogador.jumpTime = 500;
-            jogador.setVelocityY(0);
+            if (jogador.tamanho == "Pequeno") {
+                jogador.jumpTime = 500;
+                jogador.setVelocityY(0);
 
-            this.tweens.add({
-                targets: brick,
-                y: brick.y - brick.body.halfHeight,
-                ease: 'Circ',
-                duration: 100,
-                repeat: 0,
-                yoyo: true
-            });
+                this.tweens.add({
+                    targets: brick,
+                    y: brick.y - brick.body.halfHeight,
+                    ease: 'Circ',
+                    duration: 100,
+                    repeat: 0,
+                    yoyo: true
+                });
+            } else if (jogador.tamanho == "Grande") {
+                jogador.jumpTime = 500;
+                jogador.setVelocityY(0);
+
+                let particles = this.add.particles('brickParticle');
+
+                particles.createEmitter({
+                    speed: { min: 100, max: 130 },
+                    accelerationY: 300,
+                    quantity: 20,  
+                    lifespan: {min: 600, max: 1000},
+                    maxParticles: 20,
+                    x: brick.x,
+                    y: brick.y,
+                    // emitZone: {
+                    //     type: 'random',    // 'random', or 'edge'
+                    //     source: "Circle",      // Geom like Circle, or a Path or Curve
+                    // },
+                });
+
+                brick.destroy();
+            }
         }
     }
 
@@ -352,10 +376,10 @@ export default class Level1 extends Phaser.Scene {
         }
     }
 
-    spawnCoin(brick){
+    spawnCoin(brick) {
         this.coinSFX.play();
         this.addCoin();
-        let item = this.physics.add.sprite(brick.x, brick.y - brick.body.halfHeight, "coin");
+        let item = this.physics.add.sprite(brick.x, brick.y - brick.body.height, "coin");
         item.name = "Coin"
         this.time.addEvent({
             delay: 500,                // ms
@@ -370,20 +394,20 @@ export default class Level1 extends Phaser.Scene {
         return item;
     }
 
-    spawnMushroom(brick){
-        let item = new Item(this, brick.x, brick.y - brick.body.halfHeight, "mushroom")
+    spawnMushroom(brick) {
+        let item = new Item(this, brick.x, brick.y - brick.body.height, "mushroom")
         item.name = "Mushroom"
         return item;
     }
 
-    spawnMagicMushroom(brick){
-        let item = this.physics.add.sprite(brick.x, brick.y - brick.body.halfHeight, "magicMushroom");
+    spawnMagicMushroom(brick) {
+        let item = this.physics.add.sprite(brick.x, brick.y - brick.body.height, "magicMushroom");
         item.name = "Magic Mushroom"
         return item;
     }
 
-    spawnStarMan(brick){
-        let item = this.physics.add.sprite(brick.x, brick.y - brick.body.halfHeight, "starMan");
+    spawnStarMan(brick) {
+        let item = this.physics.add.sprite(brick.x, brick.y - brick.body.height, "starMan");
         item.name = "Star Man"
         return item;
     }
@@ -397,6 +421,7 @@ export default class Level1 extends Phaser.Scene {
         }
         if (item.name === "Mushroom") {
             this.items.remove(item, true, true)
+            // this.jogador.setOrigin(0.5, 1)
             this.jogador.tamanho = "Grande";
         }
         if (item.name === "Magic Mushroom") {
@@ -417,6 +442,25 @@ export default class Level1 extends Phaser.Scene {
         this.txtCoins.text = `x ${this.hudCoins}`;
     }
 
+    motionText(target, texto) {
+        let txtScore = this.add.text(target.x, target.y - target.body.halfHeight, `${texto}`, { fontFamily: "Source Code Pro", fontSize: "8px" })
+        txtScore.setOrigin(0.5);
+        txtScore.setDepth(5);
+
+        this.tweens.add({
+            targets: txtScore,
+            y: target.y - (target.body.height * 3.5),
+            ease: 'Circ',
+            duration: 400,
+            repeat: 0,
+            yoyo: false,
+            onComplete: function () {
+                txtScore.destroy()
+            },
+            onCompleteScope: this
+        });
+    }
+
     gameOver(origem) {
         if (this.jogador.active == false) { return; }
 
@@ -424,14 +468,14 @@ export default class Level1 extends Phaser.Scene {
 
         this.jogador.setActive(false);
         // this.jogador.anims.play("Dead");
-        this.jogador.stance="Dead";
+        this.jogador.stance = "Dead";
         this.gameOverSFX.play();
 
         if (origem == "Inimigo") {
             this.physics.world.colliders.destroy();
             this.tweens.add({
                 targets: this.jogador,
-                y: this.jogador.y - (this.jogador.body.height * 3),
+                y: this.jogador.y - (this.jogador.body.halfHeight * 3),
                 ease: 'Circ',
                 duration: 700,
                 repeat: 0,

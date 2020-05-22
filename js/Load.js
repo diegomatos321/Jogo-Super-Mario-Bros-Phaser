@@ -75,6 +75,7 @@ export default class LoadScene extends Phaser.Scene {
         this.load.image("starMan", "./assets/imagens/Starman.png");
         this.load.image("menuBanner", "./assets/imagens/menu-banner.png");
         this.load.image("menuPonteiro", "./assets/imagens/menu-ponteiro.png");
+        this.load.image("brickParticle", "./assets/imagens/brick-particle.png");
 
         // TILEMAP
 
@@ -239,11 +240,12 @@ export default class LoadScene extends Phaser.Scene {
         // LUIGI
         this.anims.create(
             {
-                key: "Luigi Pequeno Walking",
-                frames: this.anims.generateFrameNumbers("Luigi Pequeno", { start: 6, end: 7 }),
+                key: "Luigi Pequeno Idle",
+                frames: [{ key: "Luigi Pequeno", frame: 0 }],
                 frameRate: 10,
                 repeat: -1
             });
+
         this.anims.create(
             {
                 key: "Luigi Pequeno Jump",
@@ -253,11 +255,19 @@ export default class LoadScene extends Phaser.Scene {
             });
         this.anims.create(
             {
-                key: "Luigi Pequeno Idle",
-                frames: [{ key: "Luigi Pequeno", frame: 0 }],
+                key: "Luigi Pequeno Dead",
+                frames: [{ key: "Luigi Pequeno", frame: 2 }],
                 frameRate: 10,
                 repeat: -1
             });
+        this.anims.create(
+            {
+                key: "Luigi Pequeno Walking",
+                frames: this.anims.generateFrameNumbers("Luigi Pequeno", { start: 6, end: 7 }),
+                frameRate: 10,
+                repeat: -1
+            });
+
         this.anims.create(
             {
                 key: "Luigi Pequeno Changing Direction",
@@ -266,13 +276,6 @@ export default class LoadScene extends Phaser.Scene {
                 repeat: -1
             });
 
-        this.anims.create(
-            {
-                key: "Luigi Pequeno Dead",
-                frames: [{ key: "Luigi Pequeno", frame: 2 }],
-                frameRate: 10,
-                repeat: -1
-            });
         this.anims.create(
             {
                 key: "Luigi Grande Walking",
