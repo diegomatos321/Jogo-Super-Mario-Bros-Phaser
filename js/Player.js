@@ -21,8 +21,8 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
 
         this.current = current;
         this.tamanho = tamanho;
+        this.canWalk = true;
         this.stance = "Idle"
-
     }
 
     update(cursor, deltaTime, posicaoRelativaDoJogador) {
@@ -32,10 +32,10 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
         if (!this.active) { return; }
         
 
-        if (posicaoRelativaDoJogador >= 0) {
+        if (posicaoRelativaDoJogador >= 0 && this.canWalk) {
             // Movimenta o Jogador
             this.movimentacaoDoJogador(cursor, deltaTime)
-        }else{
+        }else if (this.canWalk){
             this.setAccelerationX(this.aceleracao.x*2);
         }
     }
@@ -75,10 +75,11 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
 
         if (cursor.up.isDown) {
             if ((this.body.touching.down || this.body.onFloor()) && !this.hasJumped && this.canJump) {
+                if(this.tamanho === "Pequeno") { this.scene.jumpSmallSFX.play()}
+                else if (this.tamanho === "Grande") { this.scene.jumpSuperSFX.play()}
                 this.jumpTime = 0;
 
                 this.stance = "Jump";
-                this.scene.jumpSFX.play();
                 this.hasJumped = true;
                 this.canJump = false;
             }
@@ -99,7 +100,17 @@ export default class Jogador extends Phaser.Physics.Arcade.Sprite {
     }
 
     animacaoDoJogador() {
+        console.log(`${this.current} ${this.tamanho} ${this.stance}`)
         this.anims.play(`${this.current} ${this.tamanho} ${this.stance}`, true);
         this.body.setSize();
+    }
+
+    fim(){
+        this.canWalk = false;
+        this.flipX = false;
+        this.stance = "Walking"
+        this.setAccelerationX(0);
+        this.setDragX(0);
+        this.setVelocityX(45);
     }
 }

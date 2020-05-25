@@ -25,10 +25,15 @@ export default class Level1 extends Phaser.Scene {
         })
 
         this.backgroundMusic.play();
-        this.jumpSFX = this.sound.add("jumpSFX", {volume : 0.3});
+        this.jumpSmallSFX = this.sound.add("jumpSmallSFX", {volume : 0.3});
+        this.jumpSuperSFX = this.sound.add("jumpSuperSFX", {volume : 0.3});
+        this.powerupAppearsSFX = this.sound.add("powerupAppearsSFX", {volume : 0.3});
+        this.powerUpSFX = this.sound.add("powerUpSFX", {volume : 0.3});
         this.bumpSFX = this.sound.add("bumpSFX", {volume : 0.3});
         this.coinSFX = this.sound.add("coinSFX", {volume : 0.3});
+        this.breakBlockSFX = this.sound.add("breakBlockSFX", {volume : 0.3});
         this.gameOverSFX = this.sound.add("gameOverSFX");
+        this.worldClear = this.sound.add("world_clear", {volume : 0.3});
 
         // Variaveis
         this.GameOver = false;
@@ -46,6 +51,7 @@ export default class Level1 extends Phaser.Scene {
 
         // JOGADOR
         this.jogador = new Jogador(this, 100, this.GAME_HEIGHT - 48, `${this.jogadorEscolhido.current} ${this.jogadorEscolhido.tamanho}`, this.jogadorEscolhido);
+        this.gameCompleted = false;
 
         // BLOCOS INTERATIVOS
         this.bricks = this.add.group();
@@ -184,6 +190,9 @@ export default class Level1 extends Phaser.Scene {
         const posicaoRelativaDoJogador = this.jogador.x - viewPortPosX;
 
         this.jogador.update(this.cursor, deltaTime, posicaoRelativaDoJogador);
+        if(this.jogador.x >= 3064 && !this.gameCompleted){
+            this.finalizarFase();
+        }
 
         // Atualização do Inimigo
         this.inimigos.children.each((inimigo) => {
@@ -201,7 +210,6 @@ export default class Level1 extends Phaser.Scene {
 
         // Fim de jogo ao cair
         if (this.jogador.y >= 275 && !this.GameOver) {
-            console.log("FOI")
             this.gameOver("Bordas do Mundo");
         }
 
@@ -321,6 +329,7 @@ export default class Level1 extends Phaser.Scene {
             } else if (jogador.tamanho == "Grande") {
                 jogador.jumpTime = 500;
                 jogador.setVelocityY(0);
+                this.breakBlockSFX.play();
 
                 let particles = this.add.particles('brickParticle');
 
@@ -402,6 +411,7 @@ export default class Level1 extends Phaser.Scene {
     }
 
     spawnMushroom(brick) {
+        this.powerupAppearsSFX.play();
         let item = new Item(this, brick.x, brick.y - brick.body.height, "mushroom")
         item.name = "Mushroom"
         return item;
@@ -428,6 +438,7 @@ export default class Level1 extends Phaser.Scene {
         }
         if (item.name === "Mushroom") {
             this.items.remove(item, true, true)
+            this.powerUpSFX.play();
             // this.jogador.setOrigin(0.5, 1)
             this.jogador.tamanho = "Grande";
         }
@@ -516,5 +527,17 @@ export default class Level1 extends Phaser.Scene {
             inimigo.body.setAllowGravity(false);
         })
 
+    }
+
+    finalizarFase(){
+        this.backgroundMusic.stop();
+        this.worldClear.play();
+
+        this.worldClear.once('complete', (music) => {
+            this.scene.start("GameOverScene", { level: "Level1", name: "World 1-1" })
+        });
+
+        this.gameCompleted = true;
+        this.jogador.fim();
     }
 }

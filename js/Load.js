@@ -88,11 +88,16 @@ export default class LoadScene extends Phaser.Scene {
 
         // AUDIO FILES
 
-        this.load.audio("jumpSFX", "./assets/audio/smb_jump-small.wav");
+        this.load.audio("jumpSmallSFX", "./assets/audio/smb_jump-small.wav");
+        this.load.audio("jumpSuperSFX", "./assets/audio/smb_jump-super.wav");
+        this.load.audio("powerupAppearsSFX", "./assets/audio/smb_powerup_appears.wav");
+        this.load.audio("powerUpSFX", "./assets/audio/smb_powerup.wav");
         this.load.audio("coinSFX", "./assets/audio/smb_coin.wav");
         this.load.audio("bumpSFX", "./assets/audio/smb_bump.wav");
         this.load.audio("backgroundMusic", "./assets/audio/BackgroundMusic.wav")
         this.load.audio("gameOverSFX", "./assets/audio/smb_gameover.wav");
+        this.load.audio("breakBlockSFX", "./assets/audio/smb_breakblock.wav");
+        this.load.audio("world_clear", "./assets/audio/smb_world_clear.wav");
     }
 
     create() {
