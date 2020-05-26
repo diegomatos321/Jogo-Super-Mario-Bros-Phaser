@@ -375,7 +375,7 @@ export default class Level1 extends Phaser.Scene {
             jogador.jumpTime = 500;
             jogador.setVelocityY(0);
 
-            if (itemProb <= 70) {
+            if (itemProb <= 90) {
                 item = this.spawnCoin(brick);
             } else  {
                 item = this.spawnMushroom(brick);
@@ -440,6 +440,9 @@ export default class Level1 extends Phaser.Scene {
             this.items.remove(item, true, true)
             this.powerUpSFX.play();
             // this.jogador.setOrigin(0.5, 1)
+            if(this.jogador.tamanho === "Pequeno"){
+                this.jogador.setVelocityY(-160);
+            }
             this.jogador.tamanho = "Grande";
         }
         if (item.name === "Magic Mushroom") {
